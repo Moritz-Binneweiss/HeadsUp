@@ -74,7 +74,9 @@ public class GameplayController : MonoBehaviour
         if (timerText == null)
             Debug.LogWarning("GameplayController: timerText not assigned and could not be found!");
         if (playerNameText == null)
-            Debug.LogWarning("GameplayController: playerNameText not assigned and could not be found!");
+            Debug.LogWarning(
+                "GameplayController: playerNameText not assigned and could not be found!"
+            );
     }
 
     public void StartRound()
