@@ -4,16 +4,11 @@ using System.Linq;
 using UnityEngine;
 
 /// <summary>
-/// Loads categories from JSON files in Resources/Categories folder
-/// Supports both ScriptableObject categories and JSON categories
+/// Manages loading and caching of game categories from Resources folder
 /// </summary>
 public class CategoryLoader : MonoBehaviour
 {
     public static CategoryLoader Instance { get; private set; }
-
-    [Header("Category Sources")]
-    public bool loadFromJSON = true;
-    public bool loadFromScriptableObjects = true;
 
     private List<Category> loadedCategories = new List<Category>();
 
@@ -32,18 +27,9 @@ public class CategoryLoader : MonoBehaviour
     public List<Category> LoadAllCategories()
     {
         loadedCategories.Clear();
+        LoadCategoriesFromJSON();
 
-        if (loadFromJSON)
-        {
-            LoadCategoriesFromJSON();
-        }
-
-        if (loadFromScriptableObjects)
-        {
-            LoadCategoriesFromResources();
-        }
-
-        Debug.Log($"Loaded {loadedCategories.Count} categories total");
+        Debug.Log($"Loaded {loadedCategories.Count} categories");
         return loadedCategories;
     }
 
@@ -58,28 +44,11 @@ public class CategoryLoader : MonoBehaviour
                 CategoryData data = JsonUtility.FromJson<CategoryData>(jsonFile.text);
                 Category category = CreateCategoryFromData(data);
                 loadedCategories.Add(category);
-                Debug.Log(
-                    $"Loaded JSON category: {category.categoryName} ({category.words.Count} words)"
-                );
+                Debug.Log($"✓ {category.categoryName} ({category.words.Count} words)");
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"Failed to load category from {jsonFile.name}: {e.Message}");
-            }
-        }
-    }
-
-    private void LoadCategoriesFromResources()
-    {
-        Category[] categories = Resources.LoadAll<Category>("Categories");
-
-        foreach (Category category in categories)
-        {
-            // Check if not already loaded from JSON
-            if (!loadedCategories.Any(c => c.categoryName == category.categoryName))
-            {
-                loadedCategories.Add(category);
-                Debug.Log($"Loaded ScriptableObject category: {category.categoryName}");
+                Debug.LogError($"Failed to load {jsonFile.name}: {e.Message}");
             }
         }
     }
@@ -89,16 +58,9 @@ public class CategoryLoader : MonoBehaviour
         Category category = ScriptableObject.CreateInstance<Category>();
         category.categoryName = data.name;
         category.words = new List<string>(data.words);
-
-        // Parse color from hex
-        if (ColorUtility.TryParseHtmlString(data.color, out Color color))
-        {
-            category.categoryColor = color;
-        }
-        else
-        {
-            category.categoryColor = Color.white;
-        }
+        category.categoryColor = ColorUtility.TryParseHtmlString(data.color, out Color color)
+            ? color
+            : Color.white;
 
         return category;
     }

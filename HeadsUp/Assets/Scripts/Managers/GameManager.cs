@@ -91,9 +91,10 @@ public class GameManager : MonoBehaviour
     public void MarkCorrect()
     {
         correctAnswers++;
-        if (currentPlayerIndex < players.Count)
+        Player currentPlayer = GetCurrentRoundPlayer();
+        if (currentPlayer != null)
         {
-            players[currentPlayerIndex].score++;
+            currentPlayer.score++;
         }
     }
 
@@ -135,15 +136,6 @@ public class GameManager : MonoBehaviour
         if (playerIndex < players.Count)
         {
             return players[playerIndex];
-        }
-        return null;
-    }
-
-    public Player GetCurrentPlayer()
-    {
-        if (currentPlayerIndex < players.Count)
-        {
-            return players[currentPlayerIndex];
         }
         return null;
     }

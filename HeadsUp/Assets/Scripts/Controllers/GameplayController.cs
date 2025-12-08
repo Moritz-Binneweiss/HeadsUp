@@ -37,46 +37,31 @@ public class GameplayController : MonoBehaviour
 
     private void FindUIReferences()
     {
-        // Try to find GameScreen if not assigned
+        if (gameScreen == null)
+            gameScreen = GameObject.Find("GameScreen");
+
         if (gameScreen == null)
         {
-            gameScreen = GameObject.Find("GameScreen");
+            Debug.LogError("GameplayController: GameScreen not found!");
+            return;
         }
 
-        if (gameScreen != null)
-        {
-            // Find UI elements by name
-            if (wordText == null)
-            {
-                Transform wordTransform = gameScreen.transform.Find("WordText");
-                if (wordTransform != null)
-                    wordText = wordTransform.GetComponent<TextMeshProUGUI>();
-            }
+        // Find UI elements by name
+        wordText =
+            wordText ?? gameScreen.transform.Find("WordText")?.GetComponent<TextMeshProUGUI>();
+        timerText =
+            timerText ?? gameScreen.transform.Find("TimerText")?.GetComponent<TextMeshProUGUI>();
+        playerNameText =
+            playerNameText
+            ?? gameScreen.transform.Find("PlayerNameText")?.GetComponent<TextMeshProUGUI>();
 
-            if (timerText == null)
-            {
-                Transform timerTransform = gameScreen.transform.Find("TimerText");
-                if (timerTransform != null)
-                    timerText = timerTransform.GetComponent<TextMeshProUGUI>();
-            }
-
-            if (playerNameText == null)
-            {
-                Transform playerTransform = gameScreen.transform.Find("PlayerNameText");
-                if (playerTransform != null)
-                    playerNameText = playerTransform.GetComponent<TextMeshProUGUI>();
-            }
-        }
-
-        // Log warnings if still not found
+        // Log missing references
         if (wordText == null)
-            Debug.LogWarning("GameplayController: wordText not assigned and could not be found!");
+            Debug.LogWarning("GameplayController: wordText not found!");
         if (timerText == null)
-            Debug.LogWarning("GameplayController: timerText not assigned and could not be found!");
+            Debug.LogWarning("GameplayController: timerText not found!");
         if (playerNameText == null)
-            Debug.LogWarning(
-                "GameplayController: playerNameText not assigned and could not be found!"
-            );
+            Debug.LogWarning("GameplayController: playerNameText not found!");
     }
 
     public void StartRound()
@@ -90,8 +75,8 @@ public class GameplayController : MonoBehaviour
         ShowNextWord();
 
         // Update player name
-        Player currentPlayer = GameManager.Instance.GetCurrentPlayer();
-        if (currentPlayer != null)
+        Player currentPlayer = GameManager.Instance.GetCurrentRoundPlayer();
+        if (currentPlayer != null && playerNameText != null)
         {
             playerNameText.text = currentPlayer.name;
         }
@@ -191,19 +176,15 @@ public class GameplayController : MonoBehaviour
 
     private void UpdateTimerDisplay()
     {
+        if (timerText == null)
+            return;
+
         int minutes = Mathf.FloorToInt(timeRemaining / 60);
         int seconds = Mathf.FloorToInt(timeRemaining % 60);
-        timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+        timerText.text = $"{minutes:00}:{seconds:00}";
 
         // Change color when time is running out
-        if (timeRemaining <= 10)
-        {
-            timerText.color = Color.red;
-        }
-        else
-        {
-            timerText.color = Color.white;
-        }
+        timerText.color = timeRemaining <= 10 ? Color.red : Color.white;
     }
 
     private void EndRound()

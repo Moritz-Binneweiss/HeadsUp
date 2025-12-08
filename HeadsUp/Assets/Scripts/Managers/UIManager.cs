@@ -27,6 +27,7 @@ public class UIManager : MonoBehaviour
     public Button continueToGameButton;
     public Transform playerListContainer;
     public GameObject playerListItemPrefab;
+    public Button[] roundSelectionButtons; // Round selection 1-5
 
     [Header("Ready Screen")]
     public TextMeshProUGUI readyPlayerNameText;
@@ -53,7 +54,7 @@ public class UIManager : MonoBehaviour
 
     [Header("Categories")]
     public CategoryLoader categoryLoader;
-    public List<Category> availableCategories;
+    public List<Category> availableCategories = new List<Category>();
 
     private Category selectedCategory;
     private List<ResultWord> currentRoundResults = new List<ResultWord>();
@@ -80,64 +81,122 @@ public class UIManager : MonoBehaviour
 
     private void LoadCategories()
     {
-        if (categoryLoader != null)
+        if (categoryLoader == null)
         {
-            List<Category> loadedCategories = categoryLoader.LoadAllCategories();
-            if (loadedCategories.Count > 0)
-            {
-                availableCategories = loadedCategories;
-            }
+            Debug.LogError("CategoryLoader is not assigned in UIManager!");
+            return;
+        }
+
+        availableCategories = categoryLoader.LoadAllCategories();
+
+        if (availableCategories.Count == 0)
+        {
+            Debug.LogWarning("No categories loaded! Check Resources/Categories folder.");
         }
     }
 
     private void SetupCategoryButtons()
     {
+        if (availableCategories == null || availableCategories.Count == 0)
+        {
+            Debug.LogWarning("No categories available to setup buttons!");
+            return;
+        }
+
         for (int i = 0; i < categoryButtons.Length && i < availableCategories.Count; i++)
         {
             int index = i;
             Category cat = availableCategories[index];
 
-            if (categoryButtons[i] != null)
-            {
-                categoryButtons[i].onClick.AddListener(() => SelectCategory(cat));
+            if (categoryButtons[i] == null)
+                continue;
 
-                TextMeshProUGUI buttonText = categoryButtons[i]
-                    .GetComponentInChildren<TextMeshProUGUI>();
-                if (buttonText != null)
-                    buttonText.text = cat.categoryName;
+            categoryButtons[i].onClick.AddListener(() => SelectCategory(cat));
 
-                Image buttonImage = categoryButtons[i].GetComponent<Image>();
-                if (buttonImage != null)
-                    buttonImage.color = cat.categoryColor;
-            }
+            // Update button text and color
+            var buttonText = categoryButtons[i].GetComponentInChildren<TextMeshProUGUI>();
+            if (buttonText != null)
+                buttonText.text = cat.categoryName;
+
+            var buttonImage = categoryButtons[i].GetComponent<Image>();
+            if (buttonImage != null)
+                buttonImage.color = cat.categoryColor;
         }
 
-        if (randomCategoryButton != null)
-            randomCategoryButton.onClick.AddListener(SelectRandomCategory);
+        randomCategoryButton?.onClick.AddListener(SelectRandomCategory);
     }
 
     private void SetupButtons()
     {
-        if (addPlayerButton != null)
-            addPlayerButton.onClick.AddListener(AddPlayer);
+        addPlayerButton?.onClick.AddListener(AddPlayer);
+        removePlayerButton?.onClick.AddListener(RemoveLastPlayer);
+        backToMenuButton?.onClick.AddListener(ShowMainMenu);
+        continueToGameButton?.onClick.AddListener(ShowReadyScreen);
+        resultsNextButton?.onClick.AddListener(OnResultsNext);
+        leaderboardNextButton?.onClick.AddListener(OnLeaderboardNext);
+        leaderboardBackToMenuButton?.onClick.AddListener(ShowMainMenu);
 
-        if (removePlayerButton != null)
-            removePlayerButton.onClick.AddListener(RemoveLastPlayer);
+        SetupRoundSelectionButtons();
+    }
 
-        if (backToMenuButton != null)
-            backToMenuButton.onClick.AddListener(ShowMainMenu);
+    private void SetupRoundSelectionButtons()
+    {
+        // Auto-find round buttons if not assigned
+        if (roundSelectionButtons == null || roundSelectionButtons.Length == 0)
+        {
+            if (playerSetupScreen != null)
+            {
+                Transform roundsPanel = playerSetupScreen.transform.Find("RoundsPanel");
+                if (roundsPanel != null)
+                {
+                    roundSelectionButtons = roundsPanel.GetComponentsInChildren<Button>();
+                }
+            }
+        }
 
-        if (continueToGameButton != null)
-            continueToGameButton.onClick.AddListener(ShowReadyScreen);
+        // Setup listeners
+        if (roundSelectionButtons != null)
+        {
+            for (int i = 0; i < roundSelectionButtons.Length; i++)
+            {
+                int roundCount = i + 1;
+                if (roundSelectionButtons[i] != null)
+                {
+                    roundSelectionButtons[i].onClick.RemoveAllListeners();
+                    roundSelectionButtons[i]
+                        .onClick.AddListener(() => SelectRoundCount(roundCount));
+                }
+            }
+        }
+    }
 
-        if (resultsNextButton != null)
-            resultsNextButton.onClick.AddListener(OnResultsNext);
+    private void SelectRoundCount(int rounds)
+    {
+        GameManager.Instance.totalRounds = rounds;
+        UpdateRoundButtonHighlight();
+    }
 
-        if (leaderboardNextButton != null)
-            leaderboardNextButton.onClick.AddListener(OnLeaderboardNext);
+    private void UpdateRoundButtonHighlight()
+    {
+        if (roundSelectionButtons == null)
+            return;
 
-        if (leaderboardBackToMenuButton != null)
-            leaderboardBackToMenuButton.onClick.AddListener(ShowMainMenu);
+        for (int i = 0; i < roundSelectionButtons.Length; i++)
+        {
+            if (roundSelectionButtons[i] == null)
+                continue;
+
+            int roundCount = i + 1;
+            var buttonImage = roundSelectionButtons[i].GetComponent<Image>();
+
+            if (buttonImage != null)
+            {
+                buttonImage.color =
+                    roundCount == GameManager.Instance.totalRounds
+                        ? new Color(0.2f, 0.8f, 0.2f) // Green - selected
+                        : new Color(0.2f, 0.6f, 1f); // Blue - unselected
+            }
+        }
     }
 
     private void SelectCategory(Category category)
@@ -172,6 +231,7 @@ public class UIManager : MonoBehaviour
             playerSetupScreen.SetActive(true);
 
         UpdatePlayerList();
+        UpdateRoundButtonHighlight();
     }
 
     public void ShowReadyScreen()
