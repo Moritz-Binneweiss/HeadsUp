@@ -227,6 +227,13 @@ public class GameplayController : MonoBehaviour
                 {
                     OnCorrect();
                 }
+                else if (Event.current.keyCode == KeyCode.RightArrow)
+                {
+                    // Developer shortcut: Skip entire round
+                    Debug.Log("[DEV] Skipping round...");
+                    StopAllCoroutines();
+                    EndRound();
+                }
             }
         }
     }

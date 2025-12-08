@@ -182,17 +182,21 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        GameManager.Instance.currentPlayerIndex = 0;
-        GameManager.Instance.PrepareNextRound();
+        if (GameManager.Instance.currentPlayerIndex == 0)
+        {
+            GameManager.Instance.PrepareNextRound();
+        }
 
         HideAllScreens();
         if (readyScreen != null)
             readyScreen.SetActive(true);
 
-        Player currentPlayer = GameManager.Instance.GetCurrentPlayer();
+        Player currentPlayer = GameManager.Instance.GetCurrentRoundPlayer();
         if (currentPlayer != null && readyPlayerNameText != null)
         {
-            readyPlayerNameText.text = currentPlayer.name;
+            int currentRound = GameManager.Instance.GetCurrentRound();
+            readyPlayerNameText.text =
+                $"{currentPlayer.name}\nRunde {currentRound}/{GameManager.Instance.totalRounds}";
         }
     }
 

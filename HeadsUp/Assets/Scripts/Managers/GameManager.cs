@@ -9,6 +9,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Game Settings")]
     public float roundDuration = 60f;
+    public int totalRounds = 1;
 
     [Header("Current Game State")]
     public Category currentCategory;
@@ -111,7 +112,7 @@ public class GameManager : MonoBehaviour
     {
         currentPlayerIndex++;
 
-        if (currentPlayerIndex >= players.Count)
+        if (currentPlayerIndex >= players.Count * totalRounds)
         {
             // Game over, show final leaderboard
             UIManager.Instance.ShowLeaderboard();
@@ -121,6 +122,21 @@ public class GameManager : MonoBehaviour
             // Show ready screen for next player
             UIManager.Instance.ShowReadyScreen();
         }
+    }
+
+    public int GetCurrentRound()
+    {
+        return (currentPlayerIndex / players.Count) + 1;
+    }
+
+    public Player GetCurrentRoundPlayer()
+    {
+        int playerIndex = currentPlayerIndex % players.Count;
+        if (playerIndex < players.Count)
+        {
+            return players[playerIndex];
+        }
+        return null;
     }
 
     public Player GetCurrentPlayer()
