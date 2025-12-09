@@ -256,7 +256,7 @@ public class UIManager : MonoBehaviour
         {
             int currentRound = GameManager.Instance.GetCurrentRound();
             readyPlayerNameText.text =
-                $"{currentPlayer.name}\nRunde {currentRound}/{GameManager.Instance.totalRounds}";
+                $"{currentPlayer.name}\nRound {currentRound}/{GameManager.Instance.totalRounds}";
         }
     }
 

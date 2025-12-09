@@ -13,6 +13,11 @@ public class ReadyScreenController : MonoBehaviour
     {
         isActive = true;
         lastTiltTime = Time.time;
+
+        // FORCE enable gyroscope
+        Input.gyro.enabled = true;
+
+        Debug.Log($"ReadyScreen - Gyro enabled: {Input.gyro.enabled}");
     }
 
     private void OnDisable()
@@ -28,11 +33,12 @@ public class ReadyScreenController : MonoBehaviour
         if (Time.time - lastTiltTime < tiltCooldown)
             return;
 
-        Vector3 acceleration = Input.acceleration;
+        Vector3 acc = Input.acceleration;
 
-        // Tilt down = Start game
-        if (acceleration.y < -tiltThreshold)
+        // Tilt down to start (use Y-axis for standard portrait)
+        if (acc.y > tiltThreshold)
         {
+            Debug.Log($"Starting game! Y={acc.y:F2}");
             StartGame();
         }
     }

@@ -8,7 +8,7 @@ public class Player
 
     public Player()
     {
-        name = "Spieler";
+        name = "Player";
         score = 0;
     }
 

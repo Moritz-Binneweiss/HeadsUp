@@ -22,11 +22,11 @@ public class GameplayController : MonoBehaviour
 
     private void Start()
     {
-        // Enable accelerometer if available
-        if (SystemInfo.supportsAccelerometer)
-        {
-            Input.acceleration.ToString(); // Initialize accelerometer
-        }
+        // FORCE enable gyroscope
+        Input.gyro.enabled = true;
+
+        Debug.Log($"GameplayController - Gyro enabled: {Input.gyro.enabled}");
+        Debug.Log($"GameplayController - Accel supported: {SystemInfo.supportsAccelerometer}");
 
         // Auto-find UI references if not assigned
         if (wordText == null || timerText == null || playerNameText == null)
@@ -108,17 +108,47 @@ public class GameplayController : MonoBehaviour
         if (Time.time - lastTiltTime < tiltCooldown)
             return;
 
-        Vector3 acceleration = Input.acceleration;
+        Vector3 acc = Input.acceleration;
 
-        // Tilt down = Correct (phone tilted forward/down)
-        if (acceleration.y < -tiltThreshold)
+        // Fallback to native Android if Unity's acceleration is dead
+        if (
+            acc.magnitude < 0.1f
+            && AndroidAccelerometer.Instance != null
+            && AndroidAccelerometer.Instance.isWorking
+        )
         {
+            acc = AndroidAccelerometer.Instance.acceleration;
+        }
+
+        // Fallback to gyro.gravity if both are zero
+        if (acc.magnitude < 0.1f && Input.gyro.enabled)
+        {
+            acc = Input.gyro.gravity;
+        }
+
+        // For phone at forehead (upside down portrait):
+        // - Tilt DOWN (towards feet) = Y becomes POSITIVE = Correct
+        // - Tilt UP (towards sky) = Y becomes NEGATIVE = Skip
+
+        float tiltValue = acc.y;
+
+        // DEBUG: Log values every second
+        if (Time.frameCount % 60 == 0)
+        {
+            Debug.Log($"[Tilt] Y:{acc.y:F2} (mag:{acc.magnitude:F2})");
+        }
+
+        // Tilt down = Correct
+        if (tiltValue > tiltThreshold)
+        {
+            Debug.Log($"✓ CORRECT! Y={tiltValue:F2}");
             OnCorrect();
             lastTiltTime = Time.time;
         }
-        // Tilt up = Skip (phone tilted backward/up)
-        else if (acceleration.y > tiltThreshold)
+        // Tilt up = Skip
+        else if (tiltValue < -tiltThreshold)
         {
+            Debug.Log($"× SKIP! Y={tiltValue:F2}");
             OnSkip();
             lastTiltTime = Time.time;
         }
@@ -134,7 +164,7 @@ public class GameplayController : MonoBehaviour
         // Flash background green
         UIManager.Instance.FlashGameBackground(true);
 
-        StartCoroutine(ShowFeedbackAndNextWord("Richtig!", Color.green));
+        StartCoroutine(ShowFeedbackAndNextWord("Correct!", Color.green));
     }
 
     private void OnSkip()
@@ -147,7 +177,7 @@ public class GameplayController : MonoBehaviour
         // Flash background red-grey
         UIManager.Instance.FlashGameBackground(false);
 
-        StartCoroutine(ShowFeedbackAndNextWord("Übersprungen", Color.yellow));
+        StartCoroutine(ShowFeedbackAndNextWord("Skipped", Color.yellow));
     }
 
     private IEnumerator ShowFeedbackAndNextWord(string feedback, Color color)
